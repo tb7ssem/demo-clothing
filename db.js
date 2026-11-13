@@ -99,7 +99,9 @@ function markDirty() {
 }
 
 function snapshotJSON() {
-  const data = { v: 1, tables: {} };
+  // v2: snapshot format bumped to force a reseed after the 40-product catalog update
+  // (old v1 snapshots hold the previous catalog and are ignored by restoreSnapshot).
+  const data = { v: 2, tables: {} };
   for (const t of TABLES) {
     const cols = origPrepare(`PRAGMA table_info(${t})`).all().map((c) => c.name);
     data.tables[t] = { cols, rows: origPrepare(`SELECT * FROM ${t}`).all() };
@@ -109,7 +111,7 @@ function snapshotJSON() {
 
 function restoreSnapshot(text) {
   const data = JSON.parse(text);
-  if (!data || data.v !== 1 || !data.tables) throw new Error('bad snapshot');
+  if (!data || data.v !== 2 || !data.tables) throw new Error('bad snapshot');
   origExec('BEGIN IMMEDIATE');
   try {
     for (const t of [...TABLES].reverse()) origExec(`DELETE FROM ${t}`);
